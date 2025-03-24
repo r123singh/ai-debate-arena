@@ -27,7 +27,11 @@ CORS(app, resources={
             "https://ai-debate-arena-31f3e.web.app",
             "https://ai-debate-arena-31f3e.firebaseapp.com",
             "http://localhost:5000",
-            "http://localhost:3000"
+            "http://127.0.0.1:5000",
+            "http://localhost:5500",
+            "http://127.0.0.1:5500",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000"
         ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
@@ -58,32 +62,26 @@ def start_debate():
         primary_agent = AssistantAgent(
             candiate1Name,
             model_client=model_client,
-            system_message = """You are a skilled debater participating in a structured debate. 
-            Your role is to present well-reasoned arguments and respond thoughtfully to your opponent's points.
-            Focus on the topic at hand and maintain a professional tone.
+            system_message = """You are a participant in an ideation and feedback session. You will be provided with a problem statement and asked to generate ideas. Your ideas will be reviwed by another participant and then you together will narrow down ideas by debating over them. Respond with 'FINALIZE' when you have a final idea.
             Use markdown formatting for better presentation:
             - Use headers (##) for main points
             - Use bullet points for lists
             - Use **bold** for emphasis
             - Use > for quotes
-            - Use code blocks for technical content
-            Respond with 'FINALIZE' when you've made your concluding argument."""
+            - Use code blocks for technical content"""
         )
 
         # Create Critic Agent
         critic_agent = AssistantAgent(
             candiate2Name,
             model_client=model_client,
-            system_message = """You are a skilled debate opponent.
-            Your role is to present counter-arguments and engage critically with the other debater's points.
-            Maintain a professional tone and focus on the topic.
+            system_message = """You are a participant in an ideation and feedback session. Your teammate will be provide some ideas that you need to review with your teammate and narrow down ideas by debating over them. Respond with 'FINALIZE' when you have a final idea.
             Use markdown formatting for better presentation:
             - Use headers (##) for main points
             - Use bullet points for lists
             - Use **bold** for emphasis
             - Use > for quotes
-            - Use code blocks for technical content
-            Respond with 'FINALIZE' when you've made your concluding argument."""
+            - Use code blocks for technical content"""
         )
 
         # Define termination condition
@@ -94,7 +92,7 @@ def start_debate():
 
         # Run the debate
         result = asyncio.run(team.run(task=topic))
-
+        print(result)
         # Process results
         candiate1Response = ""
         candiate2Response = ""
@@ -103,6 +101,10 @@ def start_debate():
         for message in result.messages:
             if message.source == candiate1Name:
                 candiate1Response += message.content + "\n\n"
+                token_count += (
+                    message.models_usage.prompt_tokens + 
+                    message.models_usage.completion_tokens
+                )
             elif message.source == candiate2Name:
                 candiate2Response += message.content + "\n\n"
                 token_count += (
@@ -124,5 +126,5 @@ def start_debate():
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
 
