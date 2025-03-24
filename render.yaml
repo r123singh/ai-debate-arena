@@ -1,0 +1,32 @@
+services:
+  # Backend API service
+  - type: web
+    name: ai-debate-arena-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn autogen-multi-agent:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: OPENAI_API_KEY
+        sync: false
+    headers:
+      - path: /*
+        name: Access-Control-Allow-Origin
+        value: https://ai-debate-arena-31f3e.web.app
+      - path: /*
+        name: Access-Control-Allow-Methods
+        value: GET,POST,OPTIONS
+      - path: /*
+        name: Access-Control-Allow-Headers
+        value: Content-Type
+    
+  # Frontend static site
+  - type: static
+    name: ai-debate-arena-frontend
+    buildCommand: echo "Static site ready"
+    staticPublishPath: ./public
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html 
